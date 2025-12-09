@@ -1,11 +1,16 @@
 import sys
 import os
 import time
+import psutil
 from typing import Tuple, List
 
 # Import string generation functions from basic.py
 from basic import generate_string, parse_input_file, generate_input_strings, DELTA, GAP, ALPHA, get_alpha
 
+def process_memory():
+    """Return current process memory usage in KB as integer."""
+    process = psutil.Process()
+    return int(process.memory_info().rss / 1024)
 
 # =========================================================================
 # Memory-Efficient Alignment (Hirschberg's Algorithm)
@@ -115,39 +120,28 @@ def calculate_alignment_cost(aligned_str1: str, aligned_str2: str) -> int:
 # =========================================================================
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python3 efficient.py input.txt output.txt")
-        sys.exit(1)
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    if not os.path.exists(input_file):
-        print(f"Error: Input file '{input_file}' not found.")
-        sys.exit(1)
-    try:
-        str1, str2 = generate_input_strings(input_file)
-    except Exception as e:
-        print(f"Error parsing input file: {e}")
-        sys.exit(1)
-    if not str1 or not str2:
-        print("Error: Failed to generate input strings from file.")
-        sys.exit(1)
+
+    str1, str2 = generate_input_strings(input_file)
+
+    # Measure memory and time
+    mem_before = process_memory()
     start_time = time.time()
     aligned_str1, aligned_str2, cost = hirschberg_alignment(str1, str2)
     end_time = time.time()
+    mem_after = process_memory()
+
     time_taken = (end_time - start_time) * 1000
+    memory_used = mem_after - mem_before
     calculated_cost = calculate_alignment_cost(aligned_str1, aligned_str2)
-    output_dir = os.path.dirname(output_file)
-    if output_dir and not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+
+
     with open(output_file, 'w') as f:
         f.write(f"{calculated_cost}\n")
         f.write(f"{aligned_str1}\n")
         f.write(f"{aligned_str2}\n")
-        f.write(f"{time_taken:.2f}\n")
-    print(f"Minimum alignment cost: {calculated_cost}")
-    print(f"Time taken: {time_taken:.2f} ms")
-    print(f"Alignment length: {len(aligned_str1)}")
-    print(f"Result written to {output_file}")
-
+        f.write(f"{time_taken}\n")
+        f.write(f"{memory_used}\n")
 if __name__ == "__main__":
     main()

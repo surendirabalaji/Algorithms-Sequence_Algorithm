@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import psutil
 from typing import Tuple, List
 
 # ============================================================================
@@ -151,18 +152,83 @@ def sequence_alignment(str1, str2, gap=GAP):
             
             # Take the minimum
             dp[i][j] = min(match_cost, gap_str2, gap_str1)
+
+    aligned_str1 = []
+    aligned_str2 = []
+    i, j = m, n
+
+    while i > 0 or j > 0:
+        if i > 0 and j > 0 and dp[i][j] == dp[i-1][j-1] + get_alpha(str1[i-1], str2[j-1]):
+            aligned_str1.append(str1[i-1])
+            aligned_str2.append(str2[j-1])
+            i -= 1
+            j -= 1
+        elif i > 0 and dp[i][j] == dp[i-1][j] + gap:
+            aligned_str1.append(str1[i-1])
+            aligned_str2.append('_')
+            i -= 1
+        else:  
+            aligned_str1.append('_')
+            aligned_str2.append(str2[j-1])
+            j -= 1
+
+    aligned_str1.reverse()
+    aligned_str2.reverse()
     
-    return dp[m][n]
+    return dp[m][n], ''.join(aligned_str1), ''.join(aligned_str2)
 
 
 # ============================================================================
 # Memory-Efficient Alignment (Hirschberg's Algorithm)
 # ============================================================================
 
-    # Call the main function to execute the program
+def process_memory() -> int:
+    """Return current process memory usage in KB."""
+    process = psutil.Process()
+    return int(process.memory_info().rss / 1024)
+
+def get_memory_usage_kb():
+    """Return memory usage in KB."""
+    process = psutil.Process()
+    return process.memory_info().rss // 1024
+
+def get_time_ms(start, end):
+    """Return time difference in milliseconds."""
+    return (end - start) * 1000
+
+
+# ============================================================================
+# Main
+# ============================================================================
+
+def main():
+    import sys
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    X, Y = generate_input_strings(input_file)
+
+    # Track time and memory
+    start_time = time.time()
+    start_mem = get_memory_usage_kb()
+
+    # Compute alignment cost and actual aligned sequences
+    alignment_cost, aligned_X, aligned_Y = sequence_alignment(X, Y)
+
+    end_time = time.time()
+    end_mem = get_memory_usage_kb()
+
+    time_taken = get_time_ms(start_time, end_time)
+    memory_used = end_mem - start_mem
+
+    with open(output_file, 'w') as f:
+        f.write(f"{alignment_cost}\n")
+        f.write(f"{aligned_X}\n")
+        f.write(f"{aligned_Y}\n")
+        f.write(f"{time_taken}\n")
+        f.write(f"{memory_used}\n")
+
+
+if __name__ == "__main__":
     main()
-    
-    # Ensure proper termination of the script
-    sys.exit(0)
 
 
